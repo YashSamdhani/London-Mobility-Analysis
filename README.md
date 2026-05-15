@@ -36,72 +36,25 @@ The analysis covers five interconnected themes:
 
 ---
 
-## Repository Structure
-
-```
-london-mobility-analysis/
-│
-├── data/
-│   ├── raw/                        # Source CDR/GPS stay-point files (not committed)
-│   ├── processed/
-│   │   ├── 06_OD_uniqueness_metrics.csv    # Per-zone entropy, Gini, HHI, LQ, asymmetry
-│   │   ├── 10_sensitive_pois.csv           # Sensitive POI catalogue (type, lat, lon)
-│   │   ├── 17_top20_corridors.csv          # Top 20 O-D corridors by flow volume
-│   │   └── 18_network_communities.csv      # MSOA → Louvain community assignment
-│   └── README.md                   # Data dictionary
-│
-├── notebooks/
-│   ├── 01_activity_analysis.ipynb          # Stay-point classification + activity dashboard
-│   ├── 02_activity_transitions.ipynb       # Transition matrix construction
-│   ├── 05_od_matrix.ipynb                  # O-D heatmap (top 50 origins)
-│   ├── 06_od_uniqueness.ipynb              # Entropy/Gini/HHI/LQ metrics
-│   ├── 07_metrics_distributions.ipynb      # Distribution plots for all metrics
-│   ├── 08_entropy_vs_gini.ipynb            # Uniqueness space scatter
-│   ├── 09_radius_gyration.ipynb            # Individual mobility range
-│   ├── 10_sensitive_pois.ipynb             # POI catalogue + spatial mapping
-│   ├── 11_sensitive_pois_clustered.ipynb   # Interactive cluster map
-│   ├── 12_sensitive_pois_heatmap.ipynb     # Density heatmap
-│   ├── 15_zipf_flow_distribution.ipynb     # Power-law rank-size plot
-│   ├── 18_network_communities.ipynb        # Louvain community detection
-│   ├── 21_temporal_profiles.ipynb          # Hourly/daily activity profiles
-│   └── 22_work_vs_allactivity.ipynb        # Work trip share analysis
-│
-├── outputs/
-│   ├── figures/                    # All static PNG outputs (numbered to match notebooks)
-│   └── html/                       # Interactive HTML maps (Folium/Plotly)
-│
-├── src/
-│   ├── staypoints.py               # Stay-point detection and activity classification
-│   ├── od_matrix.py                # O-D flow construction and aggregation
-│   ├── metrics.py                  # Entropy, Gini, HHI, LQ, asymmetry calculations
-│   ├── community.py                # Louvain community detection wrapper
-│   └── privacy.py                  # Sensitive POI proximity analysis
-│
-├── requirements.txt
-└── README.md
-```
-
----
-
 ## Visual Outputs
 
 | # | Figure | Description |
 |---|---|---|
 | 01 | Activity Dashboard | Stay count, median duration, hourly mix, day-of-week volume |
 | 02 | Activity Transition Matrix | 8×8 matrix of sequential activity pairs |
-| 05 | O-D Flow Heatmap | Top 50 origin zones, log-scale colour |
-| 07 | Metrics Distributions | Six histograms: entropy, Gini, HHI, LQ, asymmetry |
-| 08 | Entropy vs Gini Scatter | Per-zone uniqueness space (work trips) |
-| 09 | Radius of Gyration | Individual mobility range, 5,000-user sample |
-| 13 | Sensitive POIs Static | Bar chart + spatial scatter of 11 POI categories |
-| 15 | Zipf Flow Distribution | Rank-size log-log plot with power-law fit |
-| 19 | Community Sizes | Bar chart of 10 Louvain communities by MSOA count |
-| 21 | Temporal Profiles | Hourly distribution, daily distribution, stacked activity-by-hour |
-| 22 | Work vs All-Activity | Scatter + work-share histogram per O-D corridor |
+| 03 | O-D Flow Heatmap | Top 50 origin zones, log-scale colour |
+| 05 | Metrics Distributions | Six histograms: entropy, Gini, HHI, LQ, asymmetry |
+| 06 | Entropy vs Gini Scatter | Per-zone uniqueness space (work trips) |
+| 07 | Radius of Gyration | Individual mobility range, 5,000-user sample |
+| 11 | Sensitive POIs Static | Bar chart + spatial scatter of 11 POI categories |
+| 13 | Zipf Flow Distribution | Rank-size log-log plot with power-law fit |
+| 16 | Community Sizes | Bar chart of 10 Louvain communities by MSOA count |
+| 17 | Temporal Profiles | Hourly distribution, daily distribution, stacked activity-by-hour |
+| 18 | Work vs All-Activity | Scatter + work-share histogram per O-D corridor |
 
 Interactive HTML outputs (Folium):
-- `11_sensitive_pois_clustered.html` — clustered marker map of all sensitive POIs
-- `12_sensitive_pois_heatmap.html` — kernel density heatmap of POI coverage
+- `09_sensitive_pois_clustered.html` — clustered marker map of all sensitive POIs
+- `10_sensitive_pois_heatmap.html` — kernel density heatmap of POI coverage
 
 ---
 
@@ -192,87 +145,3 @@ Network communities
   Largest community (C0)              ~1,050 MSOAs
   Smallest community (C9)             ~330 MSOAs
 ```
-
----
-
-## Privacy Considerations
-
-This dataset is derived from anonymised mobile phone location data. All analysis is conducted at population level and no individual trajectories are published. However, researchers using similar data should be aware:
-
-**Re-identification risk.** With a median radius of gyration of 17 km and moderate destination entropy, individual movement signatures are distinctive. The combination of home location + workplace + one additional frequent location is sufficient to uniquely identify most individuals in datasets of this scale.
-
-**Sensitive place exposure.** The GLA contains 3,600+ sensitive POIs across 11 categories. Given the density of pharmacies (1,016) and places of worship (590) alone, virtually any mobility trace of sufficient precision will contain proximity events that could infer health status or religion — protected characteristics under GDPR Article 9.
-
-**Data minimisation.** Aggregating to MSOA level reduces but does not eliminate re-identification risk, particularly for zones with small populations or highly predictable flow patterns (low entropy, high Gini outliers).
-
-Any derivative dataset or publication from this work should complete a Data Protection Impact Assessment (DPIA) before release.
-
----
-
-## Getting Started
-
-```bash
-# Clone the repository
-git clone https://github.com/your-org/london-mobility-analysis.git
-cd london-mobility-analysis
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run all notebooks in order
-jupyter nbconvert --to notebook --execute notebooks/01_activity_analysis.ipynb
-# or open JupyterLab and run interactively
-jupyter lab
-```
-
-### Requirements
-
-```
-pandas>=1.5
-geopandas>=0.13
-numpy>=1.24
-matplotlib>=3.7
-seaborn>=0.12
-folium>=0.14
-networkx>=3.1
-python-louvain>=0.16
-scikit-learn>=1.2
-scipy>=1.10
-shapely>=2.0
-```
-
----
-
-## Data
-
-Raw location data is not included in this repository due to privacy restrictions. The processed outputs in `data/processed/` are derived aggregates at MSOA level and contain no individual-level records.
-
-To reproduce the analysis from raw data, you will need:
-
-- Mobile phone stay-point records in the format `[user_id, timestamp_start, timestamp_end, lat, lon, activity_label]`
-- MSOA boundary shapefiles — available from the [ONS Open Geography Portal](https://geoportal.statistics.gov.uk/)
-- OpenStreetMap POI data for Greater London — retrievable via the [Overpass API](https://overpass-api.de/)
-
----
-
-## Citation
-
-If you use this analysis or the methodology in your work, please cite:
-
-```bibtex
-@misc{london_mobility_2021,
-  title   = {London Mobility Analysis: Population-scale movement patterns
-             from mobile phone data, GLA November 2021},
-  year    = {2021},
-  url     = {https://github.com/your-org/london-mobility-analysis},
-  note    = {Data: anonymised mobile CDR/GPS traces, MSOA-level aggregation}
-}
-```
-
----
-
-## License
-
-MIT License — see [LICENSE](LICENSE) for details.
-
-The underlying location data is subject to separate data sharing agreements and is not redistributed here. OpenStreetMap POI data is © OpenStreetMap contributors, licensed under [ODbL](https://www.openstreetmap.org/copyright).
