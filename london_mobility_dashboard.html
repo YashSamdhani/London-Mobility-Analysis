@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>London Mobility Analysis — Interactive Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;700&display=swap');
+
+  :root {
+    --bg: #0b0e1a;
+    --surface: #111627;
+    --surface2: #1a2035;
+    --border: #2a3350;
+    --accent: #4fc9a0;
+    --accent2: #f4845f;
+    --accent3: #7c6af7;
+    --accent4: #f2c94c;
+    --text: #e8eaf6;
+    --muted: #7b8ab8;
+    --danger: #e05c7a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    padding: 3rem 4rem 2rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-end; justify-content: space-between;
+    background: linear-gradient(135deg, #0b0e1a 0%, #0f1526 100%);
+  }
+  header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.6rem;
+    line-height: 1.1;
+    color: var(--text);
+  }
+  header h1 span { color: var(--accent); font-style: italic; }
+  header .meta { text-align: right; }
+  header .meta p { color: var(--muted); font-size: 0.85rem; font-family: 'DM Mono', monospace; }
+  header .meta .badge {
+    display: inline-block; margin-top: 0.5rem;
+    background: var(--accent3); color: #fff;
+    padding: 0.2rem 0.7rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700;
+  }
+
+  /* ── NAV TABS ── */
+  nav {
+    display: flex; gap: 0; padding: 0 4rem;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  nav button {
+    padding: 1rem 1.5rem; background: transparent; border: none;
+    color: var(--muted); font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem; font-weight: 500; letter-spacing: 0.05em;
+    cursor: pointer; border-bottom: 2px solid transparent;
+    white-space: nowrap; transition: all 0.2s;
+  }
+  nav button:hover { color: var(--text); }
+  nav button.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── MAIN CONTENT ── */
+  main { padding: 2.5rem 4rem; }
+
+  .section { display: none; animation: fadeIn 0.3s ease; }
+  .section.active { display: block; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    display: flex; align-items: flex-start; gap: 1.5rem; margin-bottom: 2rem;
+  }
+  .section-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 3rem; font-weight: 500; color: var(--border);
+    line-height: 1; min-width: 3rem;
+  }
+  .section-title h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.8rem; margin-bottom: 0.3rem;
+  }
+  .section-title .subtitle { color: var(--muted); font-size: 0.9rem; }
+
+  /* ── CARDS GRID ── */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.2rem; margin-bottom: 2rem; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.5rem;
+    transition: border-color 0.2s, transform 0.2s;
+    cursor: default;
+  }
+  .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .card .card-tag {
+    font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 0.1em;
+    color: var(--muted); text-transform: uppercase; margin-bottom: 0.6rem;
+  }
+  .card .card-val {
+    font-family: 'DM Serif Display', serif; font-size: 2.2rem; color: var(--accent);
+    margin-bottom: 0.3rem;
+  }
+  .card .card-label { font-size: 0.88rem; color: var(--text); margin-bottom: 0.5rem; }
+  .card .card-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+  .card.accent2 .card-val { color: var(--accent2); }
+  .card.accent3 .card-val { color: var(--accent3); }
+  .card.accent4 .card-val { color: var(--accent4); }
+
+  /* ── INSIGHT BLOCKS ── */
+  .insight {
+    background: var(--surface2); border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0; padding: 1.2rem 1.5rem; margin-bottom: 1rem;
+  }
+  .insight.warn { border-left-color: var(--accent2); }
+  .insight.info { border-left-color: var(--accent3); }
+  .insight.note { border-left-color: var(--accent4); }
+  .insight h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.4rem; }
+  .insight p { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+  .insight p strong { color: var(--text); }
+
+  /* ── TWO-COL ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── TERM GLOSSARY ── */
+  .glossary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; }
+  .term {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 1.2rem 1.5rem;
+  }
+  .term dt {
+    font-family: 'DM Mono', monospace; font-size: 0.82rem;
+    color: var(--accent4); font-weight: 600; margin-bottom: 0.4rem;
+  }
+  .term dd { font-size: 0.83rem; color: var(--muted); line-height: 1.6; }
+  .term dd strong { color: var(--text); }
+
+  /* ── ACTIVITY BAR CHART ── */
+  .bar-chart { margin: 1.5rem 0; }
+  .bar-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.7rem; }
+  .bar-label { width: 160px; font-size: 0.82rem; color: var(--muted); text-align: right; flex-shrink: 0; }
+  .bar-track { flex: 1; background: var(--surface2); border-radius: 4px; height: 22px; overflow: hidden; }
+  .bar-fill {
+    height: 100%; border-radius: 4px;
+    display: flex; align-items: center; padding-left: 8px;
+    font-size: 0.75rem; font-weight: 700; color: #000;
+    transition: width 1s cubic-bezier(0.4,0,0.2,1);
+  }
+  .bar-val { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--muted); width: 70px; }
+
+  /* ── TRANSITION MATRIX MINI ── */
+  .matrix-wrap { overflow-x: auto; }
+  .matrix-table { border-collapse: collapse; font-size: 0.75rem; font-family: 'DM Mono', monospace; }
+  .matrix-table th, .matrix-table td {
+    padding: 0.4rem 0.6rem; border: 1px solid var(--border);
+    text-align: center; min-width: 80px;
+  }
+  .matrix-table th { background: var(--surface2); color: var(--accent4); font-size: 0.7rem; }
+  .matrix-table td { background: var(--surface); transition: background 0.2s; }
+  .matrix-table td:hover { background: var(--surface2); }
+
+  /* ── DISTRIBUTION BAR ── */
+  .dist-bar { margin: 1rem 0; }
+  .dist-segment { display: flex; margin-bottom: 0.5rem; align-items: center; gap: 0.8rem; }
+  .dist-seg-label { width: 130px; font-size: 0.78rem; color: var(--muted); flex-shrink: 0; text-align: right; }
+  .dist-seg-track { flex: 1; height: 14px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .dist-seg-fill { height: 100%; border-radius: 3px; }
+  .dist-seg-val { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--muted); width: 60px; }
+
+  /* ── COMMUNITY CHART ── */
+  .community-bars { display: flex; align-items: flex-end; gap: 0.5rem; height: 160px; margin: 1.5rem 0; }
+  .com-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
+  .com-bar { width: 100%; border-radius: 4px 4px 0 0; transition: opacity 0.2s; cursor: pointer; min-height: 4px; }
+  .com-bar:hover { opacity: 0.8; }
+  .com-bar-label { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--muted); }
+  .com-bar-val { font-size: 0.65rem; color: var(--muted); }
+
+  /* ── POI CHART ── */
+  .poi-bar-row { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.6rem; }
+  .poi-label { width: 120px; font-size: 0.8rem; text-align: right; flex-shrink: 0; }
+  .poi-track { flex: 1; background: var(--surface2); border-radius: 3px; height: 18px; overflow: hidden; }
+  .poi-fill { height: 100%; border-radius: 3px; display: flex; align-items: center; padding-left: 6px; font-size: 0.7rem; font-weight: 700; }
+  .poi-val { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--muted); width: 50px; }
+
+  /* ── GAUGE ── */
+  .gauges { display: flex; flex-wrap: wrap; gap: 1.5rem; margin: 1.5rem 0; }
+  .gauge-wrap { text-align: center; }
+  .gauge-svg { display: block; margin: 0 auto; }
+  .gauge-label { font-size: 0.78rem; color: var(--muted); margin-top: 0.3rem; }
+  .gauge-val { font-family: 'DM Mono', monospace; font-size: 1rem; font-weight: 600; }
+
+  /* ── FOOTER ── */
+  footer {
+    margin: 3rem 4rem 2rem; padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.75rem; color: var(--muted); font-family: 'DM Mono', monospace;
+  }
+
+  /* ── HIGHLIGHT TAG ── */
+  .tag {
+    display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px;
+    font-size: 0.72rem; font-weight: 700; font-family: 'DM Mono', monospace;
+  }
+  .tag.green { background: rgba(79,201,160,0.15); color: var(--accent); }
+  .tag.orange { background: rgba(244,132,95,0.15); color: var(--accent2); }
+  .tag.purple { background: rgba(124,106,247,0.15); color: var(--accent3); }
+  .tag.yellow { background: rgba(242,201,76,0.15); color: var(--accent4); }
+
+  .spacer { height: 1.5rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>London Mobility<br><span>Data Analysis</span></h1>
+    <p style="color:var(--muted);font-size:0.85rem;margin-top:0.5rem;">Greater London Area · GLA Sample · November 2021</p>
+  </div>
+  <div class="meta">
+    <p>SOURCE DATA</p>
+    <p>Mobile Phone CDR / GPS Traces</p>
+    <p>MSOA-level spatial aggregation</p>
+    <div class="badge">MOBILITY RESEARCH</div>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="show('overview',this)">Overview</button>
+  <button onclick="show('activity',this)">Activity Patterns</button>
+  <button onclick="show('flows',this)">O-D Flows</button>
+  <button onclick="show('individual',this)">Individual Mobility</button>
+  <button onclick="show('pois',this)">Sensitive POIs</button>
+  <button onclick="show('network',this)">Network Communities</button>
+  <button onclick="show('glossary',this)">Glossary</button>
+</nav>
+
+<main>
+
+<!-- ══════════════════ OVERVIEW ══════════════════ -->
+<div class="section active" id="overview">
+  <div class="section-header">
+    <div class="section-num">00</div>
+    <div class="section-title">
+      <h2>Study Overview</h2>
+      <p class="subtitle">What this dataset is and what the 11 charts tell us collectively</p>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-tag">Dataset</div>
+      <div class="card-val">~574K</div>
+      <div class="card-label">Total stay-point records</div>
+      <div class="card-desc">Activity stays detected from mobile phone location traces across the GLA in November 2021.</div>
+    </div>
+    <div class="card accent2">
+      <div class="card-tag">Geography</div>
+      <div class="card-val">MSOA</div>
+      <div class="card-label">Middle Super Output Area zones</div>
+      <div class="card-desc">~7,000 zones across Greater London, each housing ~8,000 residents on average.</div>
+    </div>
+    <div class="card accent3">
+      <div class="card-tag">Users sampled</div>
+      <div class="card-val">5,000</div>
+      <div class="card-label">Individual mobility trajectories</div>
+      <div class="card-desc">Random sample used for individual-level metrics like radius of gyration.</div>
+    </div>
+    <div class="card accent4">
+      <div class="card-tag">Activity types</div>
+      <div class="card-val">8</div>
+      <div class="card-label">Home, Work, Education, Shopping…</div>
+      <div class="card-desc">Each stay point is classified by the likely activity occurring at that location and time.</div>
+    </div>
+  </div>
+
+  <div class="insight">
+    <h4>🗺 What is this study about?</h4>
+    <p>This is a <strong>human mobility analysis</strong> derived from mobile phone location data. Researchers detected where people stopped (stay-points), inferred what they were doing there (activity inference), then measured how people move between locations (origin-destination flows). The goal is to understand patterns of movement — useful for transport planning, epidemiology, urban design, and privacy risk assessment.</p>
+  </div>
+
+  <div class="insight info">
+    <h4>📊 The 11 charts form a narrative arc</h4>
+    <p>
+      <strong>What people do</strong> → Activity Dashboard + Transition Matrix<br>
+      <strong>Where people go</strong> → O-D Heatmap + Flow Distribution + Top Corridors<br>
+      <strong>How unique those patterns are</strong> → Entropy/Gini metrics + Scatter<br>
+      <strong>How far people travel</strong> → Radius of Gyration<br>
+      <strong>Where sensitive places are</strong> → POI mapping<br>
+      <strong>How zones cluster</strong> → Network Communities
+    </p>
+  </div>
+
+  <div class="insight warn">
+    <h4>⚠️ Key finding in one sentence</h4>
+    <p>London residents show <strong>highly predictable, local mobility</strong> (median range 17 km, strong self-loops in the O-D matrix), but flow patterns follow a <strong>power law</strong>, meaning a tiny fraction of corridors handle a disproportionate share of all trips — and individual movement signatures are distinctive enough to pose <strong>re-identification privacy risks</strong>.</p>
+  </div>
+</div>
+
+<!-- ══════════════════ ACTIVITY ══════════════════ -->
+<div class="section" id="activity">
+  <div class="section-header">
+    <div class="section-num">01</div>
+    <div class="section-title">
+      <h2>Activity Patterns</h2>
+      <p class="subtitle">What Londoners are doing, when, and in what sequence</p>
+    </div>
+  </div>
+
+  <div class="insight">
+    <h4>What is a "stay point"?</h4>
+    <p>A stay point is a location where someone paused for a meaningful amount of time (e.g. >10 minutes). A person moving through the city generates a chain of GPS pings; algorithms cluster stationary pings into stay-points, then each is labelled with an activity type based on time-of-day, land use, and frequency.</p>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <h3 style="margin-bottom:1rem;font-size:1rem;color:var(--accent4)">Stay Count by Activity</h3>
+      <div class="bar-chart" id="act-bars"></div>
+    </div>
+    <div>
+      <h3 style="margin-bottom:1rem;font-size:1rem;color:var(--accent4)">Median Stay Duration</h3>
+      <div class="dist-bar" id="dur-bars"></div>
+      <div class="insight note" style="margin-top:1rem;">
+        <h4>Home vs Work duration gap</h4>
+        <p><strong>Home stays</strong> last ~480 min (overnight/evening anchors). <strong>Work</strong> ~150 min. Shopping/eating stays are short bursts of 15–25 min. "Others" catch-all has short median — many brief transits.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="insight info">
+    <h4>Why are "Others" and "Home" the top two categories?</h4>
+    <p>"Others" (216,766 stays) includes all unclassifiable stops — transit hubs, car parks, ambiguous residential/commercial areas. <strong>Home</strong> (170,151) dominates because people spend most time at their residence, especially overnight when GPS captures long stationary periods. The remaining 6 categories share the rest.</p>
+  </div>
+
+  <div class="spacer"></div>
+  <h3 style="margin-bottom:1rem;font-size:1rem;color:var(--accent4)">Activity Transition Matrix — how often activity A is followed by activity B</h3>
+  <div class="matrix-wrap">
+    <table class="matrix-table" id="trans-matrix"></table>
+  </div>
+  <div class="insight warn" style="margin-top:1rem;">
+    <h4>Dominant transitions: Others ↔ Others (93,470) and Home → Others (66,262)</h4>
+    <p>The largest flows are <strong>Others→Others</strong> (chaining unclassified stops) and <strong>Home→Others</strong> — leaving home to do something unspecified. <strong>Work→Work</strong> self-loops (13,156) indicate multi-session work stays in the same day. Education rarely chains to entertainment — students go home first.</p>
+  </div>
+
+  <div class="spacer"></div>
+  <div class="insight">
+    <h4>📅 Weekly pattern</h4>
+    <p>Monday and Tuesday show the highest stay volumes (~95K each). Wednesday–Thursday dip slightly (~82K). Friday recovers. <strong>Saturday and Sunday are clearly lower</strong> — about 60–70K stays — reflecting reduced commuting. This strongly validates the dataset's temporal realism.</p>
+  </div>
+</div>
+
+<!-- ══════════════════ O-D FLOWS ══════════════════ -->
+<div class="section" id="flows">
+  <div class="section-header">
+    <div class="section-num">02</div>
+    <div class="section-title">
+      <h2>Origin–Destination Flows</h2>
+      <p class="subtitle">Where people travel between zones, and how those flows are distributed</p>
+    </div>
+  </div>
+
+  <div class="insight">
+    <h4>What is an O-D matrix?</h4>
+    <p>An <strong>Origin-Destination (O-D) matrix</strong> is a table where rows are departure zones and columns are arrival zones. Each cell holds the number of trips between that pair. With ~7,000 MSOA zones, the full matrix has ~49 million cells — most are zero (people rarely travel between distant zones). The heatmap shows only the <strong>top 50 origin zones</strong> for clarity.</p>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-tag">Dominant signal</div>
+      <div class="card-val">Diagonal</div>
+      <div class="card-label">Intra-zone self-loops dominate</div>
+      <div class="card-desc">The bright diagonal means most trips start and end in the same zone — local, short-range movement is overwhelmingly dominant.</div>
+    </div>
+    <div class="card accent2">
+      <div class="card-tag">Power law α</div>
+      <div class="card-val">1.43</div>
+      <div class="card-label">Flow rank-size exponent (Zipf)</div>
+      <div class="card-desc">Flow volumes follow a power law. The top-ranked corridor carries disproportionately more trips than lower-ranked ones.</div>
+    </div>
+    <div class="card accent3">
+      <div class="card-tag">Spearman ρ</div>
+      <div class="card-val">0.611</div>
+      <div class="card-label">Work vs. All-activity correlation</div>
+      <div class="card-desc">Work trips moderately predict total flows per corridor, but many corridors are driven by non-work activity.</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="insight info">
+        <h4>The bright cluster around E02005119–E02005155</h4>
+        <p>A group of MSOAs in the middle of the matrix shows exceptionally high mutual flows — these are likely <strong>adjacent central London zones</strong> (Waterloo, Lambeth, Southwark area) that generate enormous cross-flow volumes due to mixed-use density and transit interchange.</p>
+      </div>
+      <div class="insight warn">
+        <h4>Why log scale?</h4>
+        <p>Flows span several orders of magnitude. Without log scale, 99% of cells would appear black. Log scale compresses the range so both large corridors (10,000+ trips) and small ones (2–10 trips) are visible simultaneously.</p>
+      </div>
+    </div>
+    <div>
+      <div class="insight note">
+        <h4>Zipf / Power law in mobility</h4>
+        <p>The Rank-Size chart plots corridors from most-used (rank 1, ~50,000 trips) to least-used (rank ~1.5M, 2 trips). The power-law fit with <strong>α = 1.43</strong> means this follows <strong>Zipf-like scaling</strong> — the 2nd-ranked corridor has about half the flow of the 1st, the 10th has ~1/10th, etc. This is universal in urban mobility data.</p>
+      </div>
+      <div class="insight">
+        <h4>Work vs. All-activity divergence</h4>
+        <p>The scatter plot shows many corridors with high all-activity flow but near-zero work flow. These are leisure/residential corridors. Conversely, a few corridors are almost exclusively work trips (work fraction ≈ 1.0) — likely suburb-to-business-district flows.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+  <h3 style="margin-bottom:1rem;font-size:1rem;color:var(--accent4)">O-D Uniqueness Metrics — what each one measures</h3>
+  <div class="glossary-grid">
+    <div class="term">
+      <dt>Shannon Entropy (Work) — Median 4.929 bits</dt>
+      <dd>Measures how <strong>spread out</strong> a zone's outgoing work trips are. High entropy = trips go to many destinations roughly equally. Low entropy = most trips go to 1–2 places. The near-bell distribution centered at ~5 bits means most zones send workers to diverse destinations.</dd>
+    </div>
+    <div class="term">
+      <dt>Entropy All — Median 5.000 bits</dt>
+      <dd>Same as above but for all activities. Slightly wider distribution (goes to ~8 bits) because leisure trips are more diffuse than work trips. The higher maximum reflects zones with extremely diverse non-work travel.</dd>
+    </div>
+    <div class="term">
+      <dt>Gini Coefficient (Work) — Median 0.389</dt>
+      <dd>Measures <strong>inequality</strong> of flow distribution. 0 = perfectly equal flows to all destinations. 1 = all flow to one destination. Median 0.39 means mild concentration — zones have a few preferred destinations but aren't monopolised by one.</dd>
+    </div>
+    <div class="term">
+      <dt>HHI Work — Median 0.051</dt>
+      <dd>Herfindahl-Hirschman Index: sum of squared market shares. Near-zero median (0.051) confirms flows are spread across many destinations. Very right-skewed: a few zones have HHI > 0.5, meaning one destination absorbs >70% of work trips.</dd>
+    </div>
+    <div class="term">
+      <dt>Location Quotient (LQ Work) — Median 0.980</dt>
+      <dd>Compares a zone's work flow to what you'd expect if trips were distributed proportionally to zone size. LQ ≈ 1 = average. LQ > 1 = over-represented work destination. Long right tail shows some zones attract far more workers than their size would predict (employment centres).</dd>
+    </div>
+    <div class="term">
+      <dt>Asymmetry — Median 0.182</dt>
+      <dd>How different inbound flows are from outbound flows. 0 = symmetric (as many people come as leave). High values = strong directional bias. Median 0.18 is low, but a long tail means some zones are strongly directional — e.g. a residential zone that exports workers but imports few.</dd>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+  <div class="insight">
+    <h4>Entropy–Gini scatter: what the cloud shape tells us</h4>
+    <p>High entropy + low Gini (top-right) = <span class="tag green">diverse but balanced</span> — trips scatter widely with no dominant corridor. Low entropy + low Gini (top-left) = <span class="tag purple">balanced local flows</span> — few destinations but equally used. Low entropy + high Gini (bottom-left) = <span class="tag orange">dominant single destination</span> — most trips go to one place. The vast majority of zones cluster in the <strong>medium-high entropy, medium Gini</strong> range — typical urban zone with 5–20 significant destinations.</p>
+  </div>
+</div>
+
+<!-- ══════════════════ INDIVIDUAL ══════════════════ -->
+<div class="section" id="individual">
+  <div class="section-header">
+    <div class="section-num">03</div>
+    <div class="section-title">
+      <h2>Individual Mobility</h2>
+      <p class="subtitle">How far individuals typically roam, and how predictable their patterns are</p>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-tag">Median range</div>
+      <div class="card-val">17 km</div>
+      <div class="card-label">Radius of Gyration</div>
+      <div class="card-desc">Half of GLA users have a mobility radius under 17 km — roughly a circle from central London to the outer ring.</div>
+    </div>
+    <div class="card accent2">
+      <div class="card-tag">Distribution shape</div>
+      <div class="card-val">Right-skewed</div>
+      <div class="card-label">Heavy tail to 200+ km</div>
+      <div class="card-desc">A small minority of users range 100–200+ km in a month — likely frequent long-distance commuters or travellers.</div>
+    </div>
+    <div class="card accent3">
+      <div class="card-tag">Local majority</div>
+      <div class="card-val">~70%</div>
+      <div class="card-label">Users with r_g under 30 km</div>
+      <div class="card-desc">Most Londoners confine their monthly movements to a relatively tight geographical bubble.</div>
+    </div>
+  </div>
+
+  <div class="insight">
+    <h4>What is Radius of Gyration (r_g)?</h4>
+    <p>Borrowed from physics, the <strong>radius of gyration</strong> characterises the spatial spread of an individual's movement. It is the <strong>root-mean-square distance</strong> of all their visited locations from their centre of mass. A person who only commutes 3 km to work has a low r_g; a travelling salesperson covering the UK has a high r_g. It is a single-number summary of how wide a person's "mobility territory" is over a period.</p>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="insight warn">
+        <h4>The bimodal bump at 5–20 km</h4>
+        <p>The histogram shows two peaks near 5 km and 15–18 km. This likely reflects two subpopulations: <strong>hyper-local users</strong> (walking/cycling distance) and <strong>typical commuters</strong> using underground/rail. November 2021 was during post-COVID return to work, so commute distances may be slightly compressed.</p>
+      </div>
+    </div>
+    <div>
+      <div class="insight note">
+        <h4>Privacy implications</h4>
+        <p>A small radius of gyration makes re-identification <strong>easier</strong> — if someone only visits 3–4 locations, those unique patterns can be matched against public data (home + workplace + gym). Paradoxically, the very people with predictable, small-range movement are the most privacy-vulnerable in mobility datasets.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+  <div class="insight info">
+    <h4>Temporal activity profiles — the double-peak workday</h4>
+    <p>The hourly distribution shows a <strong>morning surge at 8–9 AM</strong> (commute start) and a larger <strong>afternoon peak at 14–16 PM</strong> (possibly school pickups + early work departures) before dropping off through evening. The stacked-area chart shows Work activity dominates 8–18h, while Home/Others dominate the overnight period. Entertainment stays are a thin evening layer visible 18–22h.</p>
+  </div>
+</div>
+
+<!-- ══════════════════ POIs ══════════════════ -->
+<div class="section" id="pois">
+  <div class="section-header">
+    <div class="section-num">04</div>
+    <div class="section-title">
+      <h2>Sensitive Points of Interest</h2>
+      <p class="subtitle">Why location data near hospitals, schools, and worship sites raises privacy concerns</p>
+    </div>
+  </div>
+
+  <div class="insight warn">
+    <h4>Why are these POIs "sensitive"?</h4>
+    <p>Visiting certain types of locations can reveal private information about a person: a <strong>hospital</strong> visit may imply illness, an <strong>addiction clinic</strong> reveals substance issues, a <strong>place of worship</strong> reveals religion, a <strong>school</strong> presence could indicate a child, a <strong>military base</strong> may have national security implications. Mobility data that links individuals to these places must be handled with extra care under GDPR and similar regulations.</p>
+  </div>
+
+  <h3 style="margin-bottom:1rem;font-size:1rem;color:var(--accent4)">Sensitive POI Count — Greater London Area</h3>
+  <div id="poi-bars"></div>
+
+  <div class="spacer"></div>
+  <div class="two-col">
+    <div>
+      <div class="insight info">
+        <h4>Pharmacies are the most numerous (1,016)</h4>
+        <p>London has more pharmacies than schools (904). Their density means almost any mobility trace passes within a few hundred metres of one — making <strong>proximity-based inference</strong> highly feasible even without direct entry data.</p>
+      </div>
+      <div class="insight">
+        <h4>Places of worship (590) and spatial clustering</h4>
+        <p>Faith buildings are concentrated in specific communities. Detecting repeated visits to a mosque, synagogue, or church can <strong>infer religion with high confidence</strong> — a protected characteristic under UK and EU equality law.</p>
+      </div>
+    </div>
+    <div>
+      <div class="insight note">
+        <h4>Military sites (79)</h4>
+        <p>79 military installations across the GLA is surprising — reflecting barracks, TA centres, MoD offices, and former military land. Mobility data from personnel at these sites is a national security concern.</p>
+      </div>
+      <div class="insight warn">
+        <h4>Spatial pattern: denser centre, spread suburbs</h4>
+        <p>The scatter map shows POIs concentrate in inner London (around 51.5°N, -0.1°W) but spread across the entire GLA footprint. <strong>No area of London is free of sensitive POIs</strong>, meaning any sufficiently precise mobility dataset will contain sensitive proximity events.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ NETWORK ══════════════════ -->
+<div class="section" id="network">
+  <div class="section-header">
+    <div class="section-num">05</div>
+    <div class="section-title">
+      <h2>Mobility Network Communities</h2>
+      <p class="subtitle">How zones cluster based on work-trip flows using graph community detection</p>
+    </div>
+  </div>
+
+  <div class="insight">
+    <h4>What is community detection on a mobility network?</h4>
+    <p>Zones are treated as <strong>nodes</strong> in a graph; work-trip flows between zones become <strong>weighted edges</strong>. The <strong>Louvain algorithm</strong> then finds groups of zones that have strong internal flows relative to their external flows — these are "functional regions" where people predominantly work within the community rather than crossing into others.</p>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-tag">Communities found</div>
+      <div class="card-val">10</div>
+      <div class="card-label">Louvain partition</div>
+      <div class="card-desc">The algorithm settled on 10 communities, each a coherent "labour market area" by commute patterns.</div>
+    </div>
+    <div class="card accent2">
+      <div class="card-tag">Largest community</div>
+      <div class="card-val">~1,050</div>
+      <div class="card-label">MSOA zones in community 0</div>
+      <div class="card-desc">The dominant community covers roughly 1/7th of all London MSOAs — likely a large contiguous outer-London functional area.</div>
+    </div>
+    <div class="card accent3">
+      <div class="card-tag">Smallest community</div>
+      <div class="card-val">~330</div>
+      <div class="card-label">MSOA zones in community 9</div>
+      <div class="card-desc">More compact functional area, possibly a concentrated employment district like Canary Wharf / Docklands.</div>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom:0.5rem;font-size:1rem;color:var(--accent4)">Community sizes (MSOA zones per community)</h3>
+  <div class="community-bars" id="com-bars"></div>
+
+  <div class="two-col">
+    <div>
+      <div class="insight info">
+        <h4>Why relatively even sizes?</h4>
+        <p>The communities range from 330 to 1,050 zones — a 3:1 ratio, which is fairly balanced for a 7,000-zone city. This suggests London's labour market is <strong>polycentric</strong>: rather than one dominant centre (City of London) pulling all commute flows, there are roughly 10 functional sub-regions. This aligns with London's orbital rail and bus structure.</p>
+      </div>
+    </div>
+    <div>
+      <div class="insight note">
+        <h4>Policy application</h4>
+        <p>These communities could inform <strong>transport authority catchment areas</strong>, <strong>school admission zones</strong>, or <strong>health region boundaries</strong>. If communities cross borough boundaries (which they often do), it highlights misalignment between administrative and functional geography.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ GLOSSARY ══════════════════ -->
+<div class="section" id="glossary">
+  <div class="section-header">
+    <div class="section-num">GL</div>
+    <div class="section-title">
+      <h2>Glossary of Terms</h2>
+      <p class="subtitle">Plain-language definitions for every technical concept used in this analysis</p>
+    </div>
+  </div>
+  <div class="glossary-grid">
+    <div class="term"><dt>MSOA — Middle Super Output Area</dt><dd>A UK census geography unit containing ~8,000 residents. Greater London has ~983 MSOAs. They are the spatial building blocks for this analysis — each zone is an MSOA.</dd></div>
+    <div class="term"><dt>Stay-Point</dt><dd>A location where a mobile device was stationary for a minimum threshold time (e.g. 10 min). Detected from GPS/CDR traces by clustering stationary pings. Represents a place-visit event.</dd></div>
+    <div class="term"><dt>Origin-Destination (O-D) Matrix</dt><dd>A matrix where entry [i,j] counts trips from zone i to zone j. Diagonal entries are intra-zone trips. Rows sum to total outbound trips from each zone.</dd></div>
+    <div class="term"><dt>Radius of Gyration (r_g)</dt><dd>Root-mean-square distance of all visited locations from the centroid of movement. Summarises how widely an individual roams. Units: kilometres.</dd></div>
+    <div class="term"><dt>Shannon Entropy</dt><dd>From information theory: measures how uncertain (or diverse) a probability distribution is. Here, applied to the distribution of trips from one zone across all destination zones. Max = log₂(N) bits. High = diverse destinations.</dd></div>
+    <div class="term"><dt>Gini Coefficient</dt><dd>Measures inequality: 0 = perfectly equal (all destinations get equal trips), 1 = monopoly (all trips go to one destination). Borrowed from economics (wealth inequality). Here applied to destination concentration.</dd></div>
+    <div class="term"><dt>HHI — Herfindahl-Hirschman Index</dt><dd>Sum of squared market shares of destinations. Ranges 0–1. HHI < 0.1 = low concentration. HHI > 0.25 = high concentration. More sensitive than Gini to dominant players.</dd></div>
+    <div class="term"><dt>Location Quotient (LQ)</dt><dd>LQ = (zone's share of flows) / (expected share if uniformly distributed). LQ > 1 = over-represented destination. LQ < 1 = under-represented. Identifies functional specialisation.</dd></div>
+    <div class="term"><dt>Power Law / Zipf Distribution</dt><dd>A distribution where the frequency of an item is inversely proportional to its rank raised to exponent α. Common in city sizes, word frequencies, and mobility flows. α = 1.43 here is shallower than pure Zipf (α = 1), meaning top corridors are less dominant than in some cities.</dd></div>
+    <div class="term"><dt>Louvain Algorithm</dt><dd>A graph-partitioning algorithm that maximises "modularity" — the degree to which a network has more internal connections within communities than expected by chance. Fast, widely used for community detection in large networks.</dd></div>
+    <div class="term"><dt>Modularity (Q)</dt><dd>Quality metric for community detection. Ranges −1 to 1. Higher Q means better-defined communities. Values above 0.3 are generally considered meaningful structure.</dd></div>
+    <div class="term"><dt>Activity Transition Matrix</dt><dd>A square matrix where entry [A,B] counts how often activity A was immediately followed by activity B in the same person's daily sequence. Diagonal = repeated same-activity stays.</dd></div>
+    <div class="term"><dt>Sensitive POI</dt><dd>A Point of Interest whose visitation could reveal protected personal information (health status, religion, legal status). Under GDPR Article 9, inferred data about these characteristics has heightened protection requirements.</dd></div>
+    <div class="term"><dt>Spearman ρ (rho)</dt><dd>Rank correlation coefficient between two variables. Ranges −1 to 1. ρ = 0.611 between work and all-activity flows means they are moderately positively correlated — corridors busy with work tend to be busy overall, but the relationship is imperfect.</dd></div>
+    <div class="term"><dt>CDR — Call Detail Records</dt><dd>Logs generated by mobile networks recording when/where a phone connected (calls, texts, data). Coarser than GPS (cell-tower level), but available for billions of devices and widely used in population-level mobility research.</dd></div>
+    <div class="term"><dt>Asymmetry Index</dt><dd>Measures directional imbalance of flows: |outflow − inflow| / (outflow + inflow). 0 = balanced. 1 = all one-directional. High asymmetry zones are either net exporters (residential) or net importers (employment hubs) of people.</dd></div>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  <span>London Mobility Analysis · GLA Nov 2021</span>
+  <span>Interactive dashboard · Built for presentation use</span>
+  <span>Data: Mobile phone traces · Zones: MSOA level</span>
+</footer>
+
+<script>
+// ── NAV ──
+function show(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── ACTIVITY BARS ──
+const activities = [
+  { name:'Others', val:216766, pct:100, color:'#7c6af7' },
+  { name:'Home', val:170151, pct:78.5, color:'#4fc9a0' },
+  { name:'Work', val:60085, pct:27.7, color:'#f4845f' },
+  { name:'Eating & drinking', val:45862, pct:21.2, color:'#999' },
+  { name:'Entertainment', val:25289, pct:11.7, color:'#888' },
+  { name:'Shopping 2', val:23957, pct:11.1, color:'#f2c94c' },
+  { name:'Education', val:16744, pct:7.7, color:'#f4845f' },
+  { name:'Shopping 1', val:16256, pct:7.5, color:'#f2c94c' },
+];
+const actBars = document.getElementById('act-bars');
+activities.forEach(a => {
+  actBars.innerHTML += `
+    <div class="bar-row">
+      <div class="bar-label">${a.name}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${a.pct}%;background:${a.color}">${a.val.toLocaleString()}</div></div>
+    </div>`;
+});
+
+// ── DURATION BARS ──
+const durations = [
+  { name:'Home', val:480, pct:100, color:'#4fc9a0' },
+  { name:'Work', val:150, pct:31, color:'#f4845f' },
+  { name:'Education', val:60, pct:13, color:'#f4845f' },
+  { name:'Entertainment', val:40, pct:8, color:'#888' },
+  { name:'Eating & drinking', val:35, pct:7, color:'#999' },
+  { name:'Shopping 2', val:25, pct:5, color:'#f2c94c' },
+  { name:'Shopping 1', val:20, pct:4, color:'#f2c94c' },
+  { name:'Others', val:18, pct:4, color:'#7c6af7' },
+];
+const durBars = document.getElementById('dur-bars');
+durations.forEach(d => {
+  durBars.innerHTML += `
+    <div class="dist-segment">
+      <div class="dist-seg-label">${d.name}</div>
+      <div class="dist-seg-track"><div class="dist-seg-fill" style="width:${d.pct}%;background:${d.color}"></div></div>
+      <div class="dist-seg-val">${d.val} min</div>
+    </div>`;
+});
+
+// ── TRANSITION MATRIX ──
+const actTypes = ['Eating&drink','Education','Entertain','Home','Others','Shop_1','Shop_2','Work'];
+const data = [
+  [7120,665,2067,14686,14080,1489,1956,3327],
+  [743,2636,686,4922,4897,299,417,1996],
+  [1953,512,3453,8475,7389,638,782,1840],
+  [13223,5931,7565,45110,66262,5002,6243,19656],
+  [15771,4387,8156,62084,93470,5640,8520,16916],
+  [1144,207,569,6085,5001,1049,760,1249],
+  [2125,252,696,7461,7627,759,3330,1491],
+  [3684,2120,2067,17503,17548,1351,1912,13156],
+];
+const maxVal = 93470;
+const tbl = document.getElementById('trans-matrix');
+let hdr = '<thead><tr><th>→</th>' + actTypes.map(a=>`<th>${a}</th>`).join('') + '</tr></thead>';
+let body = '<tbody>' + data.map((row, i) =>
+  '<tr><th style="text-align:left;color:var(--accent4)">' + actTypes[i] + '</th>' +
+  row.map(v => {
+    const pct = v / maxVal;
+    const r = Math.round(pct * 180);
+    const g = Math.round(20 + pct * 30);
+    const b = Math.round(20);
+    return `<td style="background:rgba(${r+20},${g},${b},${Math.min(pct*3,0.95)+0.05});color:${pct>0.3?'#fff':'var(--muted)'}">${v.toLocaleString()}</td>`;
+  }).join('') + '</tr>'
+).join('') + '</tbody>';
+tbl.innerHTML = hdr + body;
+
+// ── POI BARS ──
+const pois = [
+  { name:'pharmacy', val:1016, color:'#f48fb1' },
+  { name:'school', val:904, color:'#f4845f' },
+  { name:'place_worship', val:590, color:'#4fc9a0' },
+  { name:'hospital', val:363, color:'#e05c7a' },
+  { name:'social_care', val:335, color:'#f4845f' },
+  { name:'government', val:89, color:'#4fc9a0' },
+  { name:'military', val:79, color:'#999' },
+  { name:'university', val:55, color:'#f2c94c' },
+  { name:'police', val:43, color:'#4da6ff' },
+  { name:'court', val:14, color:'#7c6af7' },
+  { name:'prison', val:12, color:'#9b59b6' },
+];
+const poiEl = document.getElementById('poi-bars');
+pois.forEach(p => {
+  const pct = (p.val / 1016) * 100;
+  poiEl.innerHTML += `
+    <div class="poi-bar-row">
+      <div class="poi-label">${p.name}</div>
+      <div class="poi-track"><div class="poi-fill" style="width:${pct}%;background:${p.color};color:#000">${p.val}</div></div>
+    </div>`;
+});
+
+// ── COMMUNITY BARS ──
+const communities = [1050,900,810,700,670,645,625,610,580,335];
+const comColors = ['#4da6ff','#f4845f','#4fc9a0','#e05c7a','#9b59b6','#c0a882','#f48fb1','#d3d3b8','#f2c94c','#87ceeb'];
+const comEl = document.getElementById('com-bars');
+const maxCom = Math.max(...communities);
+communities.forEach((v,i) => {
+  const h = (v / maxCom) * 140;
+  comEl.innerHTML += `
+    <div class="com-bar-wrap">
+      <div class="com-bar-val" style="color:var(--muted);font-size:0.6rem">${v}</div>
+      <div class="com-bar" style="height:${h}px;background:${comColors[i]}"></div>
+      <div class="com-bar-label">C${i}</div>
+    </div>`;
+});
+</script>
+</body>
+</html>
