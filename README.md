@@ -2,10 +2,9 @@
 ### Population-scale movement patterns derived from mobile phone location data — Greater London Area, November 2021
 
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
-[![Data](https://img.shields.io/badge/Data-Mobile%20CDR%2FGPS-4fc9a0?style=flat-square)](.)
+[![Data](https://img.shields.io/badge/Data-Mobile%20CDR%2FGPS-4fc9a0?style=flat-square)](https://zenodo.org/records/13327082)
 [![Geography](https://img.shields.io/badge/Geography-MSOA%20·%20GLA-f4845f?style=flat-square)](.)
 [![Sample](https://img.shields.io/badge/Sample-5%2C000%20users%20·%20574K%20stays-7c6af7?style=flat-square)](.)
-[![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 
 ---
 
